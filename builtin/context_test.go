@@ -38,7 +38,7 @@ func TestWithCancel(t *testing.T) {
 	}
 }
 
-func TestWithDeadlin(t *testing.T) {
+func TestWithDeadline(t *testing.T) {
 	d := time.Now().Add(50 * time.Millisecond)
 	ctx, cancel := context.WithDeadline(context.Background(), d)
 

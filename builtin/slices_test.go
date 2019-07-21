@@ -11,6 +11,8 @@ func TestSlices(t *testing.T) {
 	printSlice("s", s)
 	// reference s with index
 	fmt.Println("s[3] = ", s[3])
+	// error: index out of range
+	// fmt.Println("s[10] = ", s[10])
 
 	// index reference will exclude elements before the first index
 	b := s[:2] // len(b) = 2, cap(b) = 10
