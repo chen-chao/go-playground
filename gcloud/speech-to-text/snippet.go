@@ -15,6 +15,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	speech "cloud.google.com/go/speech/apiv1"
 	"github.com/cryptix/wav"
@@ -54,9 +55,11 @@ func main() {
 
 	resp, err := client.Recognize(ctx, &speechpb.RecognizeRequest{
 		Config: &speechpb.RecognitionConfig{
-			Encoding:        speechpb.RecognitionConfig_LINEAR16,
-			SampleRateHertz: sampleRate,
-			LanguageCode:    language,
+			Encoding:                   speechpb.RecognitionConfig_LINEAR16,
+			SampleRateHertz:            sampleRate,
+			LanguageCode:               language,
+			EnableWordTimeOffsets:      true,
+			EnableAutomaticPunctuation: true,
 		},
 		Audio: &speechpb.RecognitionAudio{
 			AudioSource: &speechpb.RecognitionAudio_Content{Content: data},
@@ -67,9 +70,23 @@ func main() {
 		log.Fatalf("failed to recognize: %v", err)
 	}
 
-	for _, result := range resp.Results {
-		for _, alt := range result.Alternatives {
-			fmt.Printf("\"%v\" (confidence=%3f)\n", alt.Transcript, alt.Confidence)
+	out, err := os.Create("results.time.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer out.Close()
+	for i, result := range resp.Results {
+		fmt.Fprintf(out, "%s\n", strings.Repeat("-", 20))
+		fmt.Fprintf(out, "Result %d\n", i+1)
+		for j, alt := range result.Alternatives {
+			fmt.Fprintf(out, "Alternative %d: \"%v\" (confidence=%3f)\n", j+1, alt.Transcript, alt.Confidence)
+			for _, w := range alt.Words {
+				fmt.Fprintf(out,
+					"Word: \"%v\" (startTime=%3f, endTime=%3f)\n",
+					w.Word,
+					float64(w.StartTime.Seconds)+float64(w.StartTime.Nanos)*1e-9,
+					float64(w.EndTime.Seconds)+float64(w.EndTime.Nanos)*1e-9)
+			}
 		}
 	}
 }
