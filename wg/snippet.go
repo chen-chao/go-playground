@@ -32,9 +32,25 @@ func (f *foo) Run() {
 	for i := range f.ch {
 		f.wg.Add(1)
 		fmt.Println("WGADD:\t", f.wg)
+		// tokens <- struct{}{}
+
+		// Put tokens here would cause a deadlock.
+
+		// if tokens is a non-buffered channel, we will never
+		// reach the goroutine below.
+
+		// if tokens is buffered channel, the for loop in far
+		// quicker than the go func below. there will be a
+		// time all tokens in the goroutines are released and
+		// the tokens channel are filled with tokens, no
+		// goroutine will be created to consume these tokens!
+		// A deadlock!
+
 		go func(i int) {
 			tokens <- struct{}{}
+
 			fmt.Println("Run:\t", time.Since(now).Round(time.Second), i)
+
 			defer func() {
 				f.wg.Done()
 				fmt.Println("WGDONE:\t", f.wg)
