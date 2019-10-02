@@ -34,6 +34,13 @@ func TestSlices(t *testing.T) {
 		p = append(p, i)
 		printSlice("p", p)
 	}
+
+	// deletion
+	printSlice("r", r)
+	for i := 0; i < 10; i++ {
+		r = r[0 : len(r)-1]
+		printSlice("r", r)
+	}
 }
 
 func printSlice(s string, x []int) {
