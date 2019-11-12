@@ -2,6 +2,7 @@ package builtin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -64,5 +65,26 @@ func TestWithTimeOut(t *testing.T) {
 		fmt.Println("overslept")
 	case <-ctx.Done():
 		fmt.Println("err: ", ctx.Err())
+	}
+}
+
+func TestFunc(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	finished := make(chan struct{}, 1)
+	var err error
+	go func() {
+		time.Sleep(5 * time.Second)
+		err = errors.New("oh no failed")
+		finished <- struct{}{}
+
+	}()
+
+	select {
+	case <-ctx.Done():
+		fmt.Println(ctx.Err())
+	case <-finished:
+		fmt.Println("done:", err)
 	}
 }
