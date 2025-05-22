@@ -2,6 +2,7 @@ package transcribe
 
 import (
 	"reflect"
+	"unsafe"
 )
 
 // Transcribe copy src in any type to an interface
@@ -12,8 +13,10 @@ func Transcribe(src interface{}) interface{} {
 
 func copyAny(v reflect.Value) reflect.Value {
 	switch v.Kind() {
-	case reflect.Array, reflect.Slice:
+	case reflect.Slice:
 		return copySlice(v)
+	case reflect.Array:
+		return copyArray(v)
 	case reflect.Struct:
 		return copyStruct(v)
 	case reflect.Map:
@@ -35,10 +38,29 @@ func copySlice(v reflect.Value) reflect.Value {
 	return d
 }
 
+func copyArray(v reflect.Value) reflect.Value {
+	d := reflect.New(v.Type()).Elem()
+	for i := 0; i < v.Len(); i++ {
+		d.Index(i).Set(copyAny(v.Index(i)))
+	}
+	return d
+}
+
 func copyStruct(v reflect.Value) reflect.Value {
 	d := reflect.New(v.Type()).Elem()
-	// TODO: the mutable field will change along with the original
-	d.Set(v)
+	for i := 0; i < v.NumField(); i++ {
+		ft := v.Type().Field(i)
+		fv := v.Field(i)
+
+		dst := d.FieldByName(ft.Name)
+		if ft.PkgPath == "" {
+			dst.Set(copyAny(fv))
+		} else {
+			// unexported field
+			unexported := reflect.NewAt(fv.Type(), unsafe.Pointer(fv.UnsafeAddr())).Elem()
+			dst.Set(copyAny(unexported))
+		}
+	}
 	return d
 }
 
